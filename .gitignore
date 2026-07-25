@@ -1,0 +1,48 @@
+# ── Rahasia — JANGAN PERNAH di-commit ──────────────────────────
+.env
+.env.local
+*.env
+!.env.example
+
+# Kunci API yang tersimpan sebagai file teks polos
+*API*.txt
+*api*.txt
+*key*.txt
+*token*.txt
+*secret*.txt
+credentials.json
+token.json
+service-account.json
+*.pem
+*.ppk
+
+# Ekspor workflow n8n mentah — berisi ID kredensial & dokumen.
+# Hanya versi *.sanitized.json yang boleh masuk repo.
+*.workflow.json
+!*.sanitized.json
+
+# ── Sementara ──────────────────────────────────────────────────
+.tmp/
+*.log
+*.html.bak
+
+# ── Sistem ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
+__pycache__/
+.venv/
+
+# Peta sanitasi berisi nilai ASLI - jangan pernah di-commit
+*.local.json
+
+# Instruksi kerja pribadi - tetap lokal, tidak dipublikasikan
+CLAUDE.md
+
+# Draf SDK versi awal - tidak dirujuk README, tidak dipublikasikan
+workflow.ts
+
+# Konfigurasi editor dan perkakas internal - tetap lokal
+.vscode/
+tools/
