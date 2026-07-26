@@ -7,8 +7,8 @@ Digest email otomatis berisi peringkat 10 novel teratas dari empat situs berbeda
 ![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)
 ![Gmail](https://img.shields.io/badge/Gmail-EA4335?style=for-the-badge&logo=gmail&logoColor=white)
 
-**Status:** Studi kasus teknis / proyek personal — berjalan harian untuk kebutuhan pribadi,
-dibangun untuk mengeksplorasi scraping multi-sumber dan degradasi bertahap saat sumber gagal.
+**Status:** Produksi — penggunaan pribadi. Berjalan harian otomatis lewat n8n untuk kebutuhan
+sendiri, dengan degradasi bertahap saat salah satu sumber gagal.
 
 ---
 
