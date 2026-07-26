@@ -2,6 +2,24 @@
 
 Digest email otomatis berisi peringkat 10 novel teratas dari empat situs berbeda, terkirim tiap pagi. Dibangun di atas n8n.
 
+![n8n](https://img.shields.io/badge/n8n-0A0A0A?style=for-the-badge&logo=n8n&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
+![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)
+![Gmail](https://img.shields.io/badge/Gmail-EA4335?style=for-the-badge&logo=gmail&logoColor=white)
+
+---
+
+## Daftar Isi
+
+- [Problem](#problem)
+- [Solution](#solution)
+- [Result](#result)
+- [Cara kerjanya](#cara-kerjanya)
+- [Batasan yang diketahui](#batasan-yang-diketahui)
+- [Menjalankan sendiri](#menjalankan-sendiri)
+- [Tumpukan teknologi](#tumpukan-teknologi)
+- [Lisensi](#lisensi)
+
 ---
 
 ## Problem
@@ -20,25 +38,25 @@ Tiga masalah yang ingin saya selesaikan:
 
 Satu workflow n8n terjadwal yang mengambil, menyaring, membandingkan, menerjemahkan, lalu mengirimkan hasilnya.
 
+```mermaid
+flowchart LR
+    A["Schedule<br/>07:00 WITA"] --> B["WTR Lab<br/>JSON __NEXT_DATA__"]
+    A --> C["Royal Road<br/>HTML parsing"]
+    A --> D["NovelUpdates<br/>via proxy scrape.do"]
+    A --> E["MeioNovel<br/>+ fetch detail"]
+    B --> F["Gabung & Saring Genre"]
+    C --> F
+    D --> F
+    E --> F
+    F --> G["Gemini 2.5 Flash<br/>terjemahkan + ringkas"]
 ```
-Schedule 07:00 WITA
-        │
-        ├─→ WTR Lab        (3 halaman, JSON dari __NEXT_DATA__)
-        ├─→ Royal Road     (HTML parsing)
-        ├─→ NovelUpdates   (via proxy scrape.do — diblokir Cloudflare)
-        └─→ MeioNovel      (3 halaman + fetch detail per novel)
-                │
-                ▼
-        Gabung & saring genre
-                │
-                ▼
-        Gemini 2.5 Flash ── terjemahkan + ringkas sinopsis
-                │
-                ▼
-        Baca riwayat (Google Sheets) ── hitung BARU / naik / turun
-                │
-                ├─→ Email digest HTML (Gmail)
-                └─→ Simpan snapshot hari ini (Google Sheets)
+
+```mermaid
+flowchart LR
+    A["Gemini 2.5 Flash"] --> B["Baca Riwayat<br/>Google Sheets"]
+    B --> C["Hitung BARU /<br/>naik / turun"]
+    C --> D["Email Digest HTML<br/>Gmail"]
+    C --> E["Simpan Snapshot<br/>Google Sheets"]
 ```
 
 ### Keputusan teknis
@@ -155,3 +173,11 @@ n8n · Google Gemini 2.5 Flash · Google Sheets · Gmail API · scrape.do
 ## Lisensi
 
 [MIT](LICENSE) — © 2026 Agung Tri Mahmudi
+
+## 👤 Author
+
+**Agung Tri Mahmudi**
+
+- Email: agungtrimahmudi.it@gmail.com
+- GitHub: [github.com/Agungtrimahmudi-automation](https://github.com/Agungtrimahmudi-automation)
+- LinkedIn: [linkedin.com/in/agung-tri-mahmudi](https://linkedin.com/in/agung-tri-mahmudi)
