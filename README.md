@@ -1,181 +1,225 @@
-# Novel Rekomendasi Harian
+# Daily Novel Recommendations
 
-Digest email otomatis berisi peringkat 10 novel teratas dari empat situs berbeda, terkirim tiap pagi. Dibangun di atas n8n.
+An automated email digest with the daily top 10 novel rankings from four different sites, delivered every morning. Built on n8n.
 
 ![n8n](https://img.shields.io/badge/n8n-0A0A0A?style=for-the-badge&logo=n8n&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)
 ![Gmail](https://img.shields.io/badge/Gmail-EA4335?style=for-the-badge&logo=gmail&logoColor=white)
 
-**Status:** Produksi — penggunaan pribadi. Berjalan harian otomatis lewat n8n untuk kebutuhan
-sendiri, dengan degradasi bertahap saat salah satu sumber gagal.
+**Status:** Production (personal use). Runs automatically every day via n8n for my own needs,
+with graceful degradation when one of the sources fails.
 
 ---
 
-## Daftar Isi
+## Table of Contents
 
 - [Problem](#problem)
 - [Solution](#solution)
 - [Result](#result)
-- [Cara kerjanya](#cara-kerjanya)
-- [Batasan yang diketahui](#batasan-yang-diketahui)
-- [Menjalankan sendiri](#menjalankan-sendiri)
+- [How it works](#how-it-works)
+- [Known limitations](#known-limitations)
+- [Running it yourself](#running-it-yourself)
 - [Tech Stack](#tech-stack)
-- [Lisensi](#lisensi)
+- [License](#license)
 
 ---
 
 ## Problem
 
-Saya membaca web novel setiap hari, dan tiap pagi selalu mengulang ritual yang sama: buka satu per satu situs peringkat, bandingkan mana yang naik, tebak mana yang layak dibaca. Repetitif, memakan waktu, dan yang paling mengganggu — saya sering membaca daftar yang sama persis dengan kemarin tanpa sadar, karena peringkat jarang berubah drastis.
+I read web novels every day, and every morning I'd repeat the same ritual: open each ranking
+site one by one, compare what moved up, guess what's worth reading. Repetitive, time-consuming,
+and worst of all, I'd often read the exact same list as yesterday without noticing, since
+rankings rarely change drastically.
 
-Tiga masalah yang ingin saya selesaikan:
+Three problems I wanted to solve:
 
-1. **Repetitif.** Empat situs dibuka manual setiap hari.
-2. **Tidak ada memori.** Tidak ada cara tahu mana yang benar-benar judul baru versus yang sudah nangkring seminggu.
-3. **Bahasa dan genre.** Sebagian besar situs berbahasa Inggris, dan ada genre yang selalu saya filter tapi harus dilakukan manual di tiap situs.
+1. **Repetitive.** Four sites opened manually every day.
+2. **No memory.** No way to tell what's genuinely a new title versus what's been sitting at
+   the top for a week.
+3. **Language and genre.** Most sites are in English, and there are genres I always filter
+   out but had to do manually on every site.
 
 ---
 
 ## Solution
 
-Satu workflow n8n terjadwal yang mengambil, menyaring, membandingkan, menerjemahkan, lalu mengirimkan hasilnya.
+A single scheduled n8n workflow that fetches, filters, compares, translates, and then sends
+the result.
 
 ```mermaid
 flowchart LR
     A["Schedule<br/>07:00 WITA"] --> B["WTR Lab<br/>JSON __NEXT_DATA__"]
     A --> C["Royal Road<br/>HTML parsing"]
-    A --> D["NovelUpdates<br/>via proxy scrape.do"]
+    A --> D["NovelUpdates<br/>via scrape.do proxy"]
     A --> E["MeioNovel<br/>+ fetch detail"]
-    B --> F["Gabung & Saring Genre"]
+    B --> F["Merge & Filter Genre"]
     C --> F
     D --> F
     E --> F
-    F --> G["Gemini 2.5 Flash<br/>terjemahkan + ringkas"]
+    F --> G["Gemini 2.5 Flash<br/>translate + summarize"]
 ```
 
 ```mermaid
 flowchart LR
-    A["Gemini 2.5 Flash"] --> B["Baca Riwayat<br/>Google Sheets"]
-    B --> C["Hitung BARU /<br/>naik / turun"]
-    C --> D["Email Digest HTML<br/>Gmail"]
-    C --> E["Simpan Snapshot<br/>Google Sheets"]
+    A["Gemini 2.5 Flash"] --> B["Read History<br/>Google Sheets"]
+    B --> C["Compute NEW /<br/>up / down"]
+    C --> D["HTML Email Digest<br/>Gmail"]
+    C --> E["Save Snapshot<br/>Google Sheets"]
 ```
 
-### Keputusan teknis
+### Technical decisions
 
-**Riset sumber sebelum menulis satu baris kode.** Saya probe sebelas situs lebih dulu untuk memetakan mana yang bisa diakses, sebelum memutuskan arsitektur. Hasilnya mengubah rencana awal secara signifikan.
+**Researched sources before writing a single line of code.** I probed eleven sites first to
+map out what was reachable before deciding on the architecture. The results changed the
+original plan significantly.
 
-| Situs | Status | Keputusan |
+| Site | Status | Decision |
 |---|---|---|
-| wtr-lab.com | Tembus langsung | Dipakai — data JSON terstruktur di `__NEXT_DATA__` |
-| royalroad.com | Tembus langsung | Dipakai — HTML bersih dan konsisten |
-| novelupdates.com | Cloudflare 403 | Dipakai lewat proxy — genre paling lengkap, sepadan dengan biayanya |
-| meionovel.id | Tembus langsung | Dipakai — konten sudah berbahasa Indonesia |
-| webnovel.com | Cloudflare 403 | Dibuang — lihat Batasan |
-| scribblehub, ranobes, lightnovelworld, novelfull, sakuranovel, novelgo | 403 / mati | Tidak dipakai |
+| wtr-lab.com | Directly reachable | Used, structured JSON data in `__NEXT_DATA__` |
+| royalroad.com | Directly reachable | Used, clean and consistent HTML |
+| novelupdates.com | Cloudflare 403 | Used via proxy, richest genre data, worth the cost |
+| meionovel.id | Directly reachable | Used, content is already in Indonesian |
+| webnovel.com | Cloudflare 403 | Dropped, see Known limitations |
+| scribblehub, ranobes, lightnovelworld, novelfull, sakuranovel, novelgo | 403 / dead | Not used |
 
-**Memilih sumber yang sudah menyelesaikan masalah, bukan menambah lapisan untuk menyelesaikannya.** meionovel.id menyajikan judul, genre, dan sinopsis yang sudah berbahasa Indonesia. Untuk sumber ini tidak ada terjemahan sama sekali — lebih akurat sekaligus lebih murah daripada menerjemahkan hasil bahasa Inggris.
+**Chose a source that already solved the problem, rather than adding a layer to fix a worse
+one.** meionovel.id serves titles, genres, and synopses already in Indonesian. For this
+source there's no translation step at all, which is both more accurate and cheaper than
+translating English results.
 
-**Menyaring pada tag bahasa Inggris, menampilkan dalam bahasa Indonesia.** Filter genre bekerja pada nama asli dari situs (`Harem`, `Yaoi`, `Shounen Ai`) karena pencocokannya andal. Yang tampil ke pembaca sudah diterjemahkan lewat kamus tetap, bukan mesin penerjemah, supaya nama genre tidak pernah meleset.
+**Filters on English tags, displays in Indonesian.** Genre filtering runs against each
+site's original tag names (`Harem`, `Yaoi`, `Shounen Ai`) because that matching is reliable.
+What readers see is translated through a fixed dictionary, not a machine translator, so
+genre names are never wrong.
 
-**Mengambil lebih banyak dari yang dibutuhkan.** Filter genre membuang sekitar 40–57% kandidat, jadi tiap sumber mengambil 2–3 kali lipat dari target. Hasil akhirnya tetap genap sepuluh, bukan sisa seadanya.
+**Fetches more than needed.** Genre filtering discards roughly 40 to 57% of candidates, so
+each source pulls 2 to 3 times its target count. The final result still lands on exactly ten,
+not whatever happens to survive.
 
-**Degradasi bertahap, bukan gagal total.** Setiap sumber dan panggilan LLM diset `continueRegularOutput`. Kalau proxy habis kuota atau Gemini down, email tetap terkirim dengan sumber yang berhasil, ditambah kotak peringatan yang menyebut sumber mana yang tidak terbaca hari ini.
+**Graceful degradation, not total failure.** Every source and LLM call is set to
+`continueRegularOutput`. If the proxy runs out of quota or Gemini goes down, the email still
+sends with whichever sources succeeded, plus a warning box naming which source failed to
+load that day.
 
 ---
 
 ## Result
 
-Berjalan otomatis tiap pagi 07:00 WITA. Satu eksekusi ~67 detik.
+Runs automatically every morning at 07:00 WITA. A single execution takes about 67 seconds.
 
-**40 judul per hari** — sepuluh dari masing-masing empat sumber, sudah tersaring genre.
+**40 titles per day**: ten from each of the four sources, already genre-filtered.
 
-Isi email:
+Email contents:
 
-- **Pilihan Hari Ini** — satu judul dengan rating tertinggi di antara pendatang baru
-- **Badge BARU** untuk judul yang belum pernah masuk top 10
-- **▲ / ▼** perubahan peringkat dibanding hari sebelumnya
-- **"hari ke-N"** untuk judul yang bertahan lama, supaya ketahuan mana yang cuma lewat
-- **Chip genre** berbahasa Indonesia
-- **Sinopsis** 2–3 kalimat bahasa Indonesia hasil ringkasan Gemini
-- Rating, jumlah bab, pembaca, dan tautan langsung
+- **Today's Pick**: the single highest-rated title among newcomers
+- **NEW badge** for titles that have never appeared in the top 10 before
+- **▲ / ▼** rank change versus the previous day
+- **"day N"** for titles that have stuck around for a while, so it's clear which ones are
+  just passing through
+- **Genre chips** in Indonesian
+- **Synopsis**, 2 to 3 sentences in Indonesian, summarized by Gemini
+- Rating, chapter count, reader count, and direct links
 
-Masalah "daftar yang sama tiap hari" selesai secara terukur, terverifikasi lewat dua eksekusi berturut-turut: run pertama menandai semua 20 judul sebagai BARU, run kedua menandai 0 baru dan seluruhnya berubah jadi "hari ke-2".
+The "same list every day" problem is measurably solved, verified across two consecutive
+runs: the first run flagged all 20 titles as NEW, the second flagged 0 as new, with all of
+them now showing "day 2".
 
-Filter genre juga terbukti bekerja, bukan sekadar terpasang. Peringkat #1 NovelUpdates saat pengujian adalah judul bergenre Harem — hilang dari hasil, digantikan judul berikutnya. Di MeioNovel, 8 dari 14 kandidat tersaring.
+Genre filtering is also proven to actually work, not just be wired up. NovelUpdates' #1
+ranked title during testing was a Harem-genre title; it was removed from the results,
+replaced by the next title. On MeioNovel, 8 of 14 candidates were filtered out.
 
-**Biaya operasional: nol.** Semuanya berjalan di kuota gratis:
+**Operating cost: zero.** Everything runs on free-tier quota:
 
-| Layanan | Kuota | Pemakaian |
+| Service | Quota | Usage |
 |---|---|---|
-| scrape.do | 1.000 kredit/bulan | ~300 |
-| Gemini 2.5 Flash | free tier | 1 panggilan batch/hari |
-| Google Sheets & Gmail | — | dalam batas normal |
+| scrape.do | 1,000 credits/month | ~300 |
+| Gemini 2.5 Flash | free tier | 1 batch call/day |
+| Google Sheets & Gmail | none | within normal limits |
 
 ---
 
-## Cara kerjanya
+## How it works
 
-### Riwayat dan perbandingan
+### History and comparison
 
-Google Sheets menyimpan satu baris per novel per hari: `run_date, source, rank, key, title, url, rating, views, chapters, genres`.
+Google Sheets stores one row per novel per day: `run_date, source, rank, key, title, url, rating, views, chapters, genres`.
 
-Tiap kali berjalan, workflow membaca seluruh riwayat, mencari tanggal terakhir sebelum hari ini, lalu membandingkan peringkat. Kolom `key` (`sumber|id`) yang membuat pencocokan tetap akurat meski judul berubah.
+Every time it runs, the workflow reads the full history, finds the most recent date before
+today, and compares rankings. The `key` column (`source|id`) keeps matching accurate even if
+a title's text changes.
 
-Zona waktu berpengaruh di sini: `run_date` dihitung pada `Asia/Makassar`. Zona waktu yang salah membuat eksekusi dini hari tercatat sebagai tanggal kemarin dan merusak perhitungan BARU.
+Timezone matters here: `run_date` is computed against `Asia/Makassar`. A wrong timezone would
+cause an early-morning run to be logged under yesterday's date and break the NEW calculation.
 
-### Terjemahan
+### Translation
 
-Seluruh sinopsis dikirim dalam satu panggilan batch ke Gemini, bukan satu panggilan per novel. Instruksinya tegas: 2–3 kalimat utuh, dilarang berhenti di tengah kalimat, dilarang memakai elipsis, dan pertahankan istilah khas seperti *kultivasi*, *xianxia*, *LitRPG*.
+Every synopsis is sent in a single batch call to Gemini, not one call per novel. The
+instructions are strict: 2 to 3 complete sentences, never stop mid-sentence, never use an
+ellipsis, and preserve genre-specific terms like *cultivation*, *xianxia*, *LitRPG*.
 
-### Penanganan error
+### Error handling
 
-Workflow terpisah `Error Handler - Universal` terpasang sebagai error workflow. Saat ada kegagalan, ia mengirim email berisi nama workflow, node yang gagal, pesan error, dan tautan langsung ke halaman eksekusi — tanpa perlu membuka n8n untuk tahu ada yang rusak.
-
----
-
-## Batasan yang diketahui
-
-**Filter genre WTR Lab tidak sepenuhnya presisi.** Situs ini menyimpan genre sebagai ID angka dan tidak memublikasikan peta angka-ke-nama di mana pun — saya telusuri lewat halaman novel, novel-finder, sitemap, locale alternatif, dan 47 berkas JS-nya. Filter untuk sumber ini berjalan lewat *tag* (Reverse Harem, Slave Harem, Shounen-Ai Subplot, dan sejenisnya). Novel yang hanya berlabel genre pokok "Harem" tanpa tag terkait masih bisa lolos.
-
-**Webnovel dibuang, bukan gagal dipasang.** Halaman peringkatnya hanya memuat satu kategori luas (`Urban`, `Fantasy`), tanpa genre detail dan tanpa sinopsis. Filter sungguhan menuntut pengambilan halaman tiap buku lewat proxy berbayar — sekitar 3.000 kredit/bulan melawan kuota gratis 1.000. Nilainya tidak sepadan.
-
-**Sinopsis NovelUpdates tidak tersedia** di halaman peringkat, dan menampilkannya butuh permintaan proxy tambahan per novel.
-
-**Tiga dari 40 entri masih menampilkan mojibake** (`Countâ€™s` alih-alih `Count's`) pada judul dari sumber tertentu. Tiga pendekatan perbaikan sudah dicoba dan gagal; akar masalahnya belum ditemukan. Dampaknya kosmetik — judul tetap terbaca dan tautannya berfungsi.
+A separate `Error Handler - Universal` workflow is wired in as the error workflow. On any
+failure, it emails the workflow name, the failed node, the error message, and a direct link
+to the execution page, so there's no need to open n8n to know something broke.
 
 ---
 
-## Menjalankan sendiri
+## Known limitations
 
-Prasyarat: instance n8n, akun Google, dan dua API key gratis.
+**WTR Lab's genre filter isn't fully precise.** The site stores genres as numeric IDs and
+doesn't publish an ID-to-name map anywhere; I traced it through the novel page, novel-finder,
+sitemap, alternate locales, and 47 of its JS files. Filtering for this source runs on *tags*
+instead (Reverse Harem, Slave Harem, Shounen-Ai Subplot, and similar). A novel labeled only
+with the broad genre "Harem" and no related tag can still slip through.
 
-1. Buat spreadsheet riwayat dengan header:
+**Webnovel was dropped, not left broken.** Its ranking page only exposes one broad category
+(`Urban`, `Fantasy`), with no detailed genre and no synopsis. Real filtering would require
+fetching every book's page through a paid proxy, roughly 3,000 credits/month against a free
+quota of 1,000. Not worth it.
+
+**NovelUpdates synopses aren't available** on the ranking page, and showing them would need
+an extra proxy request per novel.
+
+**Three of 40 entries still show mojibake** (`Countâ€™s` instead of `Count's`) in titles from
+a specific source. Three fix attempts have failed; the root cause hasn't been found yet. The
+impact is cosmetic: titles are still readable and links still work.
+
+---
+
+## Running it yourself
+
+Prerequisites: an n8n instance, a Google account, and two free API keys.
+
+1. Create a history spreadsheet with the header:
    `run_date, source, rank, key, title, url, rating, views, chapters, genres`
-2. Siapkan kredensial n8n — Gmail (OAuth2), Google Sheets (OAuth2), dan dua **Query Auth**:
+2. Set up n8n credentials: Gmail (OAuth2), Google Sheets (OAuth2), and two **Query Auth**
+   credentials:
 
-   | Credential | Nama parameter | Sumber |
+   | Credential | Parameter name | Source |
    |---|---|---|
-   | Scrape.do | `token` | [scrape.do](https://scrape.do) — 1.000 kredit/bulan gratis |
+   | Scrape.do | `token` | [scrape.do](https://scrape.do), 1,000 free credits/month |
    | Gemini | `key` | [Google AI Studio](https://aistudio.google.com/apikey) |
 
-3. Impor [`novel-digest.sanitized.json`](novel-digest.sanitized.json) lewat **Workflows → Import from File**
-4. Cari `GANTI_` di dalam workflow dan isi dengan nilai sendiri
-5. Set timezone workflow — n8n default mengikuti UTC
-6. Publish, lalu pasang error workflow
+3. Import [`novel-digest.sanitized.json`](novel-digest.sanitized.json) via **Workflows -> Import from File**
+4. Find `GANTI_` inside the workflow and replace with your own values
+5. Set the workflow timezone, n8n defaults to UTC
+6. Publish, then attach an error workflow
 
-API key tidak disimpan di dalam node mana pun. Semuanya lewat sistem credential n8n, sehingga tidak ikut terbawa saat workflow diekspor. Berkas `novel-digest.sanitized.json` di repo ini sudah dibersihkan dari ID spreadsheet, ID kredensial, dan alamat email.
+API keys are never stored inside a node. Everything goes through n8n's credential system, so
+they don't get exported with the workflow. The `novel-digest.sanitized.json` file in this
+repo has already been scrubbed of spreadsheet IDs, credential IDs, and email addresses.
 
 ---
 
 ## Tech Stack
 
-n8n · Google Gemini 2.5 Flash · Google Sheets · Gmail API · scrape.do
+n8n, Google Gemini 2.5 Flash, Google Sheets, Gmail API, scrape.do
 
-## Lisensi
+## License
 
-[MIT](LICENSE) — © 2026 Agung Tri Mahmudi
+[MIT](LICENSE), © 2026 Agung Tri Mahmudi
 
 ## 👤 Author
 
