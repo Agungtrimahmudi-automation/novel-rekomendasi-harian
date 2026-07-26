@@ -20,7 +20,7 @@ sendiri, dengan degradasi bertahap saat salah satu sumber gagal.
 - [Cara kerjanya](#cara-kerjanya)
 - [Batasan yang diketahui](#batasan-yang-diketahui)
 - [Menjalankan sendiri](#menjalankan-sendiri)
-- [Tumpukan teknologi](#tumpukan-teknologi)
+- [Tech Stack](#tech-stack)
 - [Lisensi](#lisensi)
 
 ---
@@ -169,7 +169,7 @@ API key tidak disimpan di dalam node mana pun. Semuanya lewat sistem credential 
 
 ---
 
-## Tumpukan teknologi
+## Tech Stack
 
 n8n · Google Gemini 2.5 Flash · Google Sheets · Gmail API · scrape.do
 
